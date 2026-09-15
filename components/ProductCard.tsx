@@ -1,0 +1,3 @@
+import Link from 'next/link';
+import { Product, rupiah } from '@/lib/data';
+export function ProductCard({product}:{product:Product}) { return <article className="card"><Link href={`/menu/${product.slug}`}><img className="card-image" src={product.image} alt={product.name}/></Link><div className="card-body"><Link href={`/menu/${product.slug}`} className="card-title">{product.name}</Link><div className="card-meta">{product.category} · Fresh setiap hari</div><div className="card-footer"><span className="price">{rupiah(product.price)}</span><Link className="mini-btn" href={`/menu/${product.slug}`}>Lihat</Link></div></div></article> }

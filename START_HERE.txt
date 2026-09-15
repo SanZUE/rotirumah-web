@@ -1,0 +1,32 @@
+ROTIRUMAH — MULAI DARI SINI
+
+1. Extract ZIP ini.
+2. Masuk ke folder yang berisi file package.json.
+3. Buka Git Bash di folder tersebut.
+4. Jalankan:
+
+   npm install
+   npm run dev
+
+5. Buka:
+   http://localhost:3000
+
+PENTING:
+- Jangan jalankan npm install dari folder ZIP.
+- Jangan masuk ke dalam file .zip. ZIP harus di-extract lebih dulu.
+- Jangan membuat database dulu.
+- Jangan memasukkan password/database URL ke GitHub.
+
+Kalau muncul error:
+1. Salin pesan error pertama.
+2. Jangan mengubah banyak file sekaligus.
+3. Simpan screenshot terminal/browser.
+4. Gunakan pesan error itu untuk diagnosis.
+
+Project ini sudah diperbaiki untuk error:
+"Missing <html> and <body> tags in the root layout."
+
+Root layout sekarang memiliki:
+<html lang="id">
+  <body>...</body>
+</html>
