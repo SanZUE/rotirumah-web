@@ -983,3 +983,48 @@ kalau melewati 18 KB, supaya regresi kode kita sendiri tetap terdeteksi.
    `enablement: true` supaya bisa mengaktifkannya sendiri saat berjalan di branch yang diizinkan.
 3. Lighthouse/LCP/CLS final harus diukur di Chrome (sandbox tidak punya browser).
 4. Backend T1–T2 (Supabase) masih backlog sesuai keputusan.
+
+### 13.5 Verifikasi live (27 Okt 2026, setelah merge PR #2)
+
+`https://sanzue.github.io/rotirumah-web/` **sudah menyajikan aplikasi**, bukan README lagi.
+
+| Cek | Hasil |
+| --- | --- |
+| Beranda | judul `RotiRumah — Roti rumahan, rasa istimewa.`, hero + 4 produk + 3 paket tampil |
+| Halaman detail | `/menu/bolen-keju/` → varian rasa, stepper, total, tombol keranjang tampil |
+| CSS berlayer | `/_next/static/chunks/3r-be0l3a88ai.css` tersaji; `@layer tokens/base/layout/components` ada |
+| `_next/` tersaji | ya → `out/.nojekyll` bekerja (Jekyll tidak mengabaikan folder `_next`) |
+| 404 kustom | `/tidak-ada-halaman/` → "Halaman tidak ditemukan." |
+| `sitemap.xml` | 15 URL (7 statis + 8 produk) dengan base URL benar |
+| Gambar | semua dari `/rotirumah-web/img/...`, 0 permintaan ke pihak ketiga |
+| Pages build | build terakhir = commit `99a3847` (merge PR #2), status `built` |
+
+Catatan risiko yang belum bisa saya tutup sendiri: API masih melaporkan
+`build_type: legacy` dan token tidak berizin mengubahnya (`PUT /pages` → 403).
+Artifact deploy dari Actions menang saat ini (dan `configure-pages` berjalan dengan
+`enablement: true`), tetapi kalau Jekyll suatu saat mengambil alih lagi, situs bisa
+kembali menampilkan README. Karena itu ditambahkan **smoke test pasca-deploy** di
+workflow yang mengecek halaman live dan gagal keras kalau aplikasi tidak muncul.
+
+Perbaikan permanen (butuh 1 klik dari pemilik repo):
+**Settings → Pages → Source: GitHub Actions.**
+
+
+### 13.6 Foto paket (lanjutan)
+
+Lima foto paket sudah dibuat dan disambungkan, menggantikan foto sementara:
+
+| Slug | Dipakai di | Lebar hasil |
+| --- | --- | --- |
+| `paket-ngopi` | `/paket`, beranda | 480/768/1080 |
+| `paket-keluarga` | `/paket` | 480/768/1080 |
+| `paket-hampers` | `/paket`, beranda | 480/768/1080 |
+| `paket-spesial` | `/paket` | 480/768/1080 |
+| `paket-lebaran` | `/paket`, kartu produk | 480/768/1080 |
+
+Total aset gambar sekarang **15 foto** (semua lokal). `assets/img-src/` disimpan sebagai JPG kualitas 92
+(3,4 MB untuk 15 file) agar repo tetap ringan namun masih bisa diregenerasi;
+`public/img/` berisi 4,0 MB hasil AVIF/WebP/JPG multi-lebar.
+
+Tambahan perbaikan: `tsconfig.tsbuildinfo` (cache incremental 188 KB, ikut ter-commit sebelumnya)
+dihapus dari Git dan masuk `.gitignore` — cache build tidak seharusnya ada di repo.

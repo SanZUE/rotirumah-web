@@ -77,3 +77,22 @@ jobs:
       - name: Deploy
         id: deploy
         uses: actions/deploy-pages@v4
+
+      - name: Smoke test live
+        run: |
+          set -e
+          URL="https://sanzue.github.io/rotirumah-web/"
+          # Pages/CDN kadang masih menyajikan versi sebelumnya beberapa detik.
+          for attempt in 1 2 3 4 5 6; do
+            BODY=$(curl -sS -L --max-time 20 "$URL" || true)
+            if echo "$BODY" | grep -q "Roti rumahan, rasa istimewa"; then
+              echo "Live OK setelah percobaan $attempt"
+              exit 0
+            fi
+            echo "Percobaan $attempt: belum sesuai, tunggu 15 detik..."
+            sleep 15
+          done
+          echo "GAGAL: halaman live tidak memuat aplikasi (kemungkinan GitHub Pages")
+          echo "kembali ke mode 'legacy'/Jekyll dan menimpa hasil deploy.")
+          echo "Perbaikan: Settings -> Pages -> Source: GitHub Actions."
+          exit 1
