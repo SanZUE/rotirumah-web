@@ -1,0 +1,60 @@
+/* ==========================================================================
+   Design tokens — RotiRumah
+   Semua pasangan warna sudah diuji kontras (WCAG AA, target 4.5:1):
+     accent #a05226 di cream 5.42 · di band 4.92 · di paper 5.54
+     muted  #7a6a5f di cream 4.99 · di band 4.53 · di paper 5.10
+     brown  #6f3c22 di cream 8.63 · putih di atas brown 8.95
+   ========================================================================== */
+
+@layer tokens {
+  :root {
+    /* warna permukaan */
+    --cream: #fffaf4;
+    --paper: #fffdf9;
+    --band: #f8eee6;
+    --soft: #f7eee6;
+
+    /* warna teks */
+    --brown: #6f3c22;
+    --brown-dark: #432516;
+    --muted: #7a6a5f;
+    --on-brown: #ffffff;
+
+    /* aksen (teks & tombol memakai --accent, bukan --accent-soft) */
+    --accent: #a05226;
+    --accent-soft: #c87746; /* hanya dekorasi: garis, ikon, gradien */
+    --accent-wash: #f5eae2;
+
+    /* garis */
+    --line: #eadfd5;
+    --line-strong: #d9c5b5;
+
+    /* bentuk */
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 18px;
+    --r-xl: 24px;
+    --r-2xl: 30px;
+    --r-pill: 999px;
+
+    /* bayangan */
+    --shadow-card: 0 8px 30px rgba(74, 39, 22, .05);
+    --shadow-lift: 0 14px 34px rgba(74, 39, 22, .12);
+    --shadow-pop: 0 18px 44px rgba(52, 27, 14, .18);
+
+    /* tipografi */
+    --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: Georgia, 'Times New Roman', serif;
+
+    /* layout */
+    --container: 1160px;
+    --gutter: 16px;
+    --header-h: 74px;
+
+    /* lapisan z-index */
+    --z-header: 50;
+    --z-drawer: 80;
+    --z-toast: 90;
+    --z-skip: 100;
+  }
+}

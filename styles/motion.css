@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Motion — semua animasi memakai transform/opacity (compositor-only).
+   Tanpa library. Menghormati prefers-reduced-motion.
+   ========================================================================== */
+
+@layer motion {
+  :root {
+    --dur-1: 120ms;
+    --dur-2: 180ms;
+    --dur-3: 280ms;
+    --dur-4: 420ms;
+    --ease-out: cubic-bezier(.22, .61, .36, 1);
+    --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
+  }
+
+  /* ---------- Scroll reveal ----------
+     Kelas `.js` dipasang oleh skrip inline singkat di <head>.
+     Tanpa JS, konten tetap terlihat penuh. */
+  .js .reveal:not([data-shown='true']) {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+
+  .reveal {
+    transition:
+      opacity var(--dur-3) var(--ease-out),
+      transform var(--dur-3) var(--ease-out);
+    transition-delay: calc(var(--reveal-delay, 0) * 45ms);
+  }
+
+  /* ---------- Hero entrance ---------- */
+  .hero-enter > * {
+    animation: rise var(--dur-4) var(--ease-out) both;
+  }
+
+  .hero-enter > *:nth-child(2) {
+    animation-delay: 60ms;
+  }
+
+  .hero-enter > *:nth-child(3) {
+    animation-delay: 120ms;
+  }
+
+  .hero-enter > *:nth-child(4) {
+    animation-delay: 180ms;
+  }
+
+  .hero-enter > *:nth-child(5) {
+    animation-delay: 240ms;
+  }
+
+  /* ---------- Keyframes ---------- */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translate3d(100%, 0, 0);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes pop {
+    0% {
+      transform: scale(.72);
+    }
+    60% {
+      transform: scale(1.16);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 12px, 0) scale(.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: 0 0;
+    }
+  }
+}
+
+/* ==========================================================================
+   Reduced motion — dua lapis: CSS + pengecekan di Reveal.tsx
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .js .reveal:not([data-shown='true']) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .reveal {
+    transition: none;
+    transition-delay: 0s;
+  }
+
+  .hero-enter > * {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+}
