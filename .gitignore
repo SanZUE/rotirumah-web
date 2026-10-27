@@ -7,3 +7,6 @@ out/
 !.env.example
 npm-debug.log*
 .DS_Store
+
+# TypeScript incremental build cache (jangan di-commit)
+*.tsbuildinfo
