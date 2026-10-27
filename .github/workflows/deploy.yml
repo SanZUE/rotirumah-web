@@ -57,6 +57,10 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Izinkan workflow ini mengaktifkan Pages (build_type: workflow) sekali,
+          # supaya tidak perlu mengubah setting manual. Butuh permission pages: write.
+          enablement: true
 
       - name: Upload artefak
         uses: actions/upload-pages-artifact@v3

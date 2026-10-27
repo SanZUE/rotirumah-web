@@ -125,6 +125,19 @@
     opacity: 1;
   }
 
+  /* Grid item berisi Reveal: pastikan tidak overflow & tinggi seragam */
+  .grid-4 > *,
+  .grid-3 > *,
+  .grid-2 > * {
+    min-width: 0;
+  }
+
+  .grid-4 > .reveal > .card,
+  .grid-3 > .reveal > .card,
+  .grid-2 > .reveal > .card {
+    height: 100%;
+  }
+
   /* ---------- Kartu ---------- */
   .card {
     position: relative;

@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "images:optimize": "node scripts/optimize-images.mjs",
     "size:report": "node scripts/report-size.mjs",
-    "verify": "npm run typecheck && npm run build && node scripts/report-size.mjs"
+    "verify": "npm run typecheck && npm run build && node scripts/report-size.mjs",
+    "preview": "node scripts/preview-static.mjs"
   },
   "dependencies": {
     "next": "16.3.5",

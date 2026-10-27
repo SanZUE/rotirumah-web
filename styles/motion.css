@@ -14,11 +14,13 @@
   }
 
   /* ---------- Scroll reveal ----------
-     Kelas `.js` dipasang oleh skrip inline singkat di <head>.
-     Tanpa JS, konten tetap terlihat penuh. */
-  .js .reveal:not([data-shown='true']) {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
+     Disembunyikan HANYA kalau browser benar-benar menjalankan JS
+     (media feature `scripting`). Tanpa JS / browser lama, konten terlihat. */
+  @media (scripting: enabled) {
+    .reveal:not([data-shown='true']) {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+    }
   }
 
   .reveal {
@@ -121,9 +123,11 @@
     scroll-behavior: auto;
   }
 
-  .js .reveal:not([data-shown='true']) {
-    opacity: 1;
-    transform: none;
+  @media (scripting: enabled) {
+    .reveal:not([data-shown='true']) {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   .reveal {
