@@ -4,6 +4,11 @@
 **Basis kode:** `c459dea` (branch `arena/f64c144f-rotirumah-web`)
 **Sasaran:** upgrade animasi + optimalisasi + efisiensi, hasil akhir tampil di **GitHub Pages**
 
+**Isi:** §0 ringkasan & keputusan · §1 audit terukur · §2 kendala GitHub Pages · §3 arsitektur target ·
+§4 frontend (motion, gambar, a11y, SEO) · §5 backend · §6 anggaran performa · §7 deployment ·
+§8 roadmap · §9 peta file · §10 risiko · §11 definition of done · §12 langkah pertama ·
+lampiran B (checkout T0) · C (kontrak motion) · D (workflow & perintah deploy) · E (skrip QA)
+
 ---
 
 ## 0. Ringkasan eksekutif
@@ -39,6 +44,19 @@ Ringkasan kondisi teknis hari ini (semua diukur, bukan perkiraan):
 
 Kesimpulan arah: **static-first (output export) + islands kecil + motion berbiaya nol JS runtime + backend opsional BaaS**.
 Bukan menambah library animasi besar, bukan memindahkan framework.
+
+### 0.1 Keputusan final (disetujui 27 Okt 2026)
+
+| Topik | Keputusan | Konsekuensi teknis |
+| --- | --- | --- |
+| Gambar | **Placeholder fotorealistis dibuat sendiri** (AI), disimpan lokal | 0 request pihak ketiga; 15 aset sumber → pipeline `sharp`; mudah ditukar dengan foto asli nanti |
+| Tailwind | **Dihapus** | `postcss.config.mjs` dihapus, 3 devDependency dicabut, reset CSS ditulis sendiri (±1,2 KB), styling seluruhnya CSS semantik ber-`@layer` |
+| Backend | **T0 saja** untuk iterasi ini | checkout WhatsApp diperkaya (pickup/ongkir, tanggal, slot, catatan, kode pesanan); tidak ada dependensi eksternal; skema T1–T2 tetap didokumentasikan |
+| Rilis | **Dua-duanya** | workflow deploy dari `main` *dan* branch kerja (branch kerja ditambahkan ke deployment branch policy), lalu PR tetap di-merge ke `main` sebagai rilis resmi |
+
+Konsekuensi jujur soal gambar: foto AI bukan produk asli RotiRumah. Semua aset akan diberi nama jelas,
+didokumentasikan di `README.md`, dan **pipeline tukar-gambar dibuat satu perintah** (`assets/img-src/` →
+`npm run images:optimize`) supaya penggantian dengan foto asli nanti tidak menyentuh kode sama sekali.
 
 ---
 
@@ -295,20 +313,44 @@ Karena Pages tidak punya image optimizer, optimasi dilakukan **saat build** (dan
 3. Hero berubah dari `background-image` CSS menjadi `<Picture priority>` → LCP bisa di-preload dan punya srcset.
 4. Target: halaman beranda ≤ 500 KB total transfer di 4G, hero ≤ 90 KB (AVIF, 1080 px).
 
-**Sumber foto (butuh keputusanmu — lihat §12):** tiga opsi, semuanya bisa dikerjakan di sandbox ini:
+**Daftar aset yang akan dibuat** (semua disimpan lokal, tanpa pihak ketiga):
 
-| Opsi | Plus | Minus |
-| --- | --- | --- |
-| A. Tetap Unsplash (URL remote) | 0 pekerjaan | pihak ketiga, LCP tidak stabil, tidak ada srcset lokal |
-| B. Foto asli RotiRumah (kamu upload) | paling kredibel & jujur | perlu kamu kirim file |
-| C. Placeholder fotorealistis yang saya generate | tanpa dependensi, konsisten, bisa langsung jalan | harus diberi label ilustrasi sampai foto asli ada |
+| Slug | Rasio | Dipakai di | Lebar hasil |
+| --- | --- | --- | --- |
+| `hero` | 16:9 | beranda (LCP, `priority`) | 1440 |
+| `bolen-keju`, `bolen-cokelat`, `bomboloni`, `roti-sobek`, `roti-keju`, `roti-cokelat`, `roti-sosis`, `bolen-durian` | 4:3 | kartu produk, detail | 1080 |
+| `paket-ngopi`, `paket-hampers`, `paket-keluarga`, `paket-spesial` | 4:3 | `/paket`, beranda | 1080 |
+| `paket-lebaran` | 4:3 | kartu produk musiman | 1080 |
+| `dapur` | 4:5 | `/tentang-kami` | 1080 |
+| `og` | 1200×630 | Open Graph (statis, bukan AI) | 1200 |
 
-Rekomendasi saya: **C sekarang, B nanti**. Pipeline-nya identik; mengganti file sumber tidak mengubah kode.
+Total 15 foto + 1 OG. Semua di-generate sekali, di-resize ke 4 lebar (AVIF/WebP/JPG), lalu folder sumber
+(`assets/img-src/`, ±15 file) tetap di-commit agar bisa diregenerasi. Estimasi hasil akhir `public/img/`:
+±3–4 MB untuk 60+ file — masih di bawah batas wajar repo, dan hanya 1–4 file yang dimuat per halaman.
+
+**Cara mengganti dengan foto asli nanti (tanpa ubah kode):**
+1. Taruh foto baru di `assets/img-src/` dengan nama slug yang sama (mis. `bolen-keju.jpg`).
+2. `npm run images:optimize`.
+3. Commit. Kode, alt text, dan layout tidak berubah.
 
 ### 4.4 Aksesibilitas
 
-- Warna: `--accent` digelapkan ke **`#a05226`** (5,42:1 di cream, 4,92:1 di band) — masih terasa
-  terracotta. `--muted` untuk area band → **`#7a6a5f`** (4,53:1). Simpan varian terang hanya untuk dekorasi.
+**Palet final** (semua pasangan sudah dihitung, target WCAG AA 4,5:1 untuk teks normal):
+
+| Token | Nilai | Di atas | Rasio |
+| --- | --- | --- | --- |
+| `--accent` (baru) | `#a05226` | cream `#fffaf4` | 5,42 ✅ |
+| `--accent` | `#a05226` | band `#f8eee6` | 4,92 ✅ |
+| `--accent` | `#a05226` | paper `#fffdf9` | 5,54 ✅ |
+| `--muted` (baru) | `#7a6a5f` | band `#f8eee6` | 4,53 ✅ |
+| `--muted` | `#7a6a5f` | cream | 4,99 ✅ |
+| `--brown` | `#6f3c22` | cream | 8,63 ✅ |
+| `--on-brown` | `#ffffff` | `#6f3c22` | 8,95 ✅ |
+| teks tombol accent | `#ffffff` | `#a05226` | 5,63 ✅ |
+
+Nilai lama yang gagal: `--accent #c87746` = 3,27 (cream) / 2,97 (band); `--muted #806f64` di band = 4,20.
+`--accent-soft` boleh tetap terang untuk border/ikon dekoratif, tapi tidak untuk teks.
+
 - Satu `<h1>` per halaman; `/keranjang` kosong memakai `<h2>`.
 - `<main id="main-content" tabIndex={-1}>` supaya skip link benar-benar memindahkan fokus.
 - Drawer & toast: `role="dialog"`/`aria-live`, Escape, focus trap, `inert` untuk konten belakang.
@@ -423,8 +465,10 @@ create table order_items (
 | Area | Sekarang | Target | Cara |
 | --- | --- | --- | --- |
 | First-load JS | 173 KB gzip | **≤ 130 KB**, ideal ≤ 115 KB | pindahkan shell `/keranjang` & `/kontak` ke server component, hapus `loading.tsx`, pisah context cart, tanpa library baru |
-| CSS | 4,3 KB gzip | ≤ 4,5 KB (dengan motion) | `@layer`, hapus kelas mati (`split`, `split-img`, `quote-box`), putuskan Tailwind |
-| Request pihak ketiga | ~9–13 gambar Unsplash | **0** | gambar lokal hasil sharp |
+| CSS | 4,3 KB gzip | ≤ 4,5 KB **termasuk motion** | `@layer`, hapus kelas mati (`split`, `split-img`, `quote-box`), **buang Tailwind** (preflight ±1,4 KB gzip diganti reset ±0,4 KB gzip) |
+| Request pihak ketiga | 12 URL Unsplash (dipakai 15×) | **0** | gambar lokal hasil sharp |
+| Prefetch berlebih | semua `<Link>` di viewport ikut prefetch | hanya navigasi utama | `prefetch={false}` untuk grid produk/paket |
+
 | Hero LCP | CSS background 1800 px | ≤ 90 KB AVIF, preload | `<Picture priority>` |
 | CLS | berisiko | ≤ 0,02 | width/height + aspect-ratio + LQIP |
 | Build | ~11 s | ≤ 15 s | tetap Turbopack |
@@ -505,11 +549,12 @@ branch `arena/f64c144f-rotirumah-web` ke deployment branch policy.
 | **2. Motion system** | token, reveal, hover/press, badge pop, cart drawer + toast, skeleton, header scroll | situs terasa hidup & halus, 0 KB library | 3–4 jam |
 | **3. A11y & UX** | palet kontras, drawer lengkap (focus/ESC/inert), tab filter berfungsi, empty/hydration state, target 44 px, form | Lighthouse a11y 100 | 2–3 jam |
 | **4. SEO & konten** | metadata per halaman, OG image, icon, sitemap/robots/manifest, JSON-LD, copywriting | shareable link + terindeks rapi | 1–2 jam |
-| **5. Backend opsional** | T0 diperkaya (pickup/ongkir, tanggal, catatan) lalu T1–T2 Supabase + admin read-only | pesanan tercatat, katalog bisa diubah tanpa deploy | 3–6 jam per tier |
-| **6. QA & rilis** | typecheck, build, uji keyboard/mobile, cek Lighthouse manual, PR + merge, verifikasi live | rilis v1 | 1–2 jam |
+| **5. Checkout T0** | pickup/ongkir, tanggal + slot, catatan, kode pesanan, validasi, draft tersimpan (§Lampiran B) | pesanan lengkap masuk WhatsApp; ongkir tidak lagi dipaksakan | 2–3 jam |
+| **6. QA & rilis** | typecheck, CI, uji keyboard/mobile, Lighthouse manual, PR + merge, verifikasi live | rilis v1 | 1–2 jam |
 
-Catatan: Fase 0–4 = inti permintaan (animasi, optimalisasi, efisiensi). Fase 5 hanya dikerjakan kalau kamu setuju
-menambah dependensi eksternal.
+Catatan: Fase 0–5 = lingkup iterasi ini (deploy, animasi, optimalisasi, efisiensi, checkout).
+Backend T1–T2 (Supabase: katalog dari DB, order tersimpan, admin) **masuk backlog** — skemanya sudah siap di §5
+kalau nanti dibutuhkan.
 
 ---
 
@@ -518,7 +563,9 @@ menambah dependensi eksternal.
 | File | Aksi |
 | --- | --- |
 | `next.config.mjs` | tambah export/basePath/trailingSlash/images |
-| `package.json` | skrip `typecheck`, `images:optimize`, `verify`; hapus/pertahankan Tailwind (§12) |
+| `package.json` | skrip `typecheck`, `images:optimize`, `verify`; cabut `tailwindcss`, `@tailwindcss/postcss`, `postcss` |
+| `postcss.config.mjs` | **dihapus** (Tailwind dicabut) |
+
 | `app/layout.tsx` | metadata lengkap, viewport, icon, font, `<main tabIndex={-1}>`, CartDrawer + Toast |
 | `app/page.tsx` | hero `<Picture priority>`, hero entrance, reveal grid |
 | `app/menu/page.tsx` | `FilterTabs` nyata + `?kategori=` |
@@ -564,27 +611,33 @@ menambah dependensi eksternal.
 
 - [ ] `https://sanzue.github.io/rotirumah-web/` menampilkan aplikasi (bukan README), semua 7 halaman + 9 detail produk jalan.
 - [ ] `output:'export'`, `trailingSlash`, `basePath` benar; `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`, `manifest.webmanifest` tersaji.
-- [ ] 0 request ke `images.unsplash.com`; hero AVIF + `fetchpriority=high` + preload.
+- [ ] 0 request ke `images.unsplash.com`; semua gambar dari `public/img/`, hero AVIF + `fetchpriority=high` + preload.
 - [ ] First-load JS ≤ 130 KB gzip; CSS ≤ 4,5 KB gzip.
+- [ ] Tailwind benar-benar hilang: tidak ada `@import "tailwindcss"`, `postcss.config.mjs` terhapus, build tetap hijau tanpa 3 devDependency itu.
 - [ ] Reveal, hover, drawer, toast jalan; `prefers-reduced-motion: reduce` mematikan semuanya.
 - [ ] Tidak ada flash "keranjang kosong"; badge keranjang terlihat di mobile.
 - [ ] Kontras ≥ 4,5:1 untuk semua teks; satu `<h1>` per halaman; navigasi keyboard penuh (termasuk drawer).
 - [ ] `npm run build` & `npm run typecheck` hijau di CI; artefak deploy = folder `out/`.
-- [ ] Checkout T0 membawa nama, WA, pickup/delivery, tanggal, catatan; pickup = Rp0.
-- [ ] README diperbarui (dev, build, deploy, ganti gambar/font).
+- [ ] Checkout T0 membawa nama, WA, pickup/delivery, tanggal, slot, catatan, kode pesanan; pickup = Rp0.
+- [ ] Deploy jalan dari branch kerja (preview) **dan** dari `main` (rilis).
+- [ ] README diperbarui (dev, build, deploy, ganti gambar).
 
 ---
 
-## 12. Keputusan yang saya butuhkan sebelum mode action
+## 12. Keputusan (final) & langkah pertama di mode action
 
-1. **Sumber foto** — pakai placeholder fotorealistis yang saya buat (cepat, tanpa dependensi), tetap Unsplash,
-   atau kamu kirim foto asli?
-2. **Tailwind** — dihapus (hemat dependensi & ~1,4 KB CSS, seluruh styling jadi CSS semantik) atau dipertahankan
-   sebagai layer utilitas untuk komponen baru?
-3. **Backend** — cukup T0 (checkout WhatsApp yang jauh lebih lengkap) dulu, atau langsung siapkan Supabase T1–T2
-   di iterasi ini?
-4. **Cara rilis** — merge PR ke `main` lalu deploy dari `main` (aman, standar), atau saya minta izin menambah
-   branch kerja ke deployment branch policy supaya kamu bisa lihat hasil sebelum merge?
+Semua terjawab di §0.1. Urutan eksekusi yang akan saya tempuh persis setelah kamu bilang "mulai":
+
+1. **Canary deploy** (paling berisiko, dikerjakan lebih dulu): ubah `build_type` Pages → `workflow`,
+   tambahkan branch kerja ke deployment branch policy, push workflow, pastikan halaman live berubah dari README
+   menjadi aplikasi. Kalau salah satu langkah API ditolak, saya laporkan dan pakai jalur `main` saja.
+2. Fondasi build: `output:'export'`, `basePath`, `trailingSlash`, `.nojekyll`, skrip npm, cabut Tailwind.
+3. Aset: generate 15 foto + OG, jalankan `sharp`, `Picture`, hero jadi gambar asli (bukan CSS background).
+4. Motion: token → reveal → micro-interaction → drawer/toast/skeleton.
+5. A11y, SEO, T0 checkout, QA, PR.
+
+Yang **tidak** akan saya sentuh tanpa izin lagi: mengubah setting repo di luar Pages/branch policy,
+menambah layanan eksternal (Supabase/analytics), atau memindahkan project dari Next.js.
 
 ---
 
@@ -602,3 +655,270 @@ ls -l out/index.html out/menu/index.html
 Angka pada dokumen ini diukur dari build `c459dea` di sandbox (Next 16.3.5, Node 22.22.3). Sandbox tidak punya
 Chrome, jadi **skor Lighthouse/LCP/CLS final harus kamu ambil di Chrome DevTools lokal** — angka target di §6
 adalah target, bukan hasil pengukuran.
+
+---
+
+## Lampiran B — Spesifikasi checkout T0 (WhatsApp yang "naik kelas")
+
+Ini inti keputusan "backend T0": pesanan tetap lewat WhatsApp, tapi datanya lengkap dan valid, sehingga
+kamu bisa memproses tanpa tanya balik.
+
+### B.1 Konfigurasi (`lib/content/site.ts`)
+
+```ts
+export const site = {
+  name: 'RotiRumah',
+  whatsappDisplay: '0896-0609-1861',
+  whatsappE164: '6289606091861',
+  instagram: { handle: '@bundaihza01', url: 'https://instagram.com/bundaihza01' },
+  hours: '07.00–20.00 WIB',
+  timeZone: 'Asia/Jakarta',
+  fulfilment: {
+    pickup:   { label: 'Ambil di dapur', fee: 0 },
+    delivery: { label: 'Diantar',        fee: 10_000, minSubtotal: 50_000 },
+  },
+  slots: ['07.00–10.00', '10.00–13.00', '13.00–16.00', '16.00–19.00'],
+  preOrder: { minDays: 1, maxDays: 14 },
+  limits: { maxQtyPerItem: 20, maxItems: 60 },
+} as const;
+```
+
+Ongkir tidak lagi hardcoded di halaman: `pickup` = Rp0, `delivery` = Rp10.000 (dan minimal belanja
+Rp50.000 untuk diantar). Semua angka ada di satu tempat.
+
+### B.2 Aturan validasi
+
+| Field | Aturan | Pesan error |
+| --- | --- | --- |
+| `name` | 2–60 karakter | "Nama minimal 2 karakter." |
+| `phone` | `^(\+62\|62\|0)8[1-9][0-9]{6,11}$` → dinormalisasi ke `62…` | "Nomor WhatsApp belum valid (contoh: 0896…)." |
+| `fulfilment` | `pickup` \| `delivery` | — |
+| `address` | wajib 10–200 karakter jika `delivery` | "Alamat wajib diisi untuk pengantaran." |
+| `date` | `YYYY-MM-DD`, ≥ besok, ≤ H+14 (zona `Asia/Jakarta`) | "Pilih tanggal mulai besok, maksimal 2 minggu ke depan." |
+| `slot` | salah satu dari `site.slots` | "Pilih jam ambil/kirim." |
+| `note` | ≤ 300 karakter | "Catatan maksimal 300 karakter." |
+| item | qty 1–20 per item, total ≤ 60 | "Jumlah per produk maksimal 20." |
+
+Validasi dijalankan di klien (untuk UX) **dan** dicek ulang saat menyusun pesan. Karena tidak ada server,
+validasi ini bukan garis keamanan — itu diterima di T0 karena "pembayaran" tetap manual lewat obrolan.
+
+### B.3 Kode pesanan & template pesan
+
+Kode dibuat lokal: `RR-<YYYYMMDD>-<4 karakter base32>` (mis. `RR-20261028-A7K2`) memakai `crypto.getRandomValues`,
+bukan `Math.random()`. Kode ini ditampilkan di ringkasan dan dikutip di WhatsApp agar mudah dicari.
+
+```
+Halo RotiRumah 👋
+Saya ingin memesan (kode: RR-20261028-A7K2)
+
+Nama: Siti Rahayu
+WhatsApp: 0896-0609-1861
+Metode: Diantar
+Tanggal: Rabu, 28 Oktober 2026
+Slot: 10.00–13.00
+Alamat: Jl. Cigadung Raya No. 12, Bandung
+
+Rincian:
+• Roti Bolen Keju (Keju) ×2 — Rp30.000
+• Donat Bomboloni (Cokelat) ×1 — Rp12.000
+
+Subtotal: Rp42.000
+Ongkir: Rp10.000
+Total: Rp52.000
+
+Catatan: tanpa kacang
+Mohon dikonfirmasi ketersediaannya. Terima kasih!
+```
+
+- Tanggal diformat `Intl.DateTimeFormat('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric', timeZone:'Asia/Jakarta' })` (formatter di-cache).
+- Draft disimpan di `rotirumah-checkout-draft-v1` agar tidak hilang saat refresh; dihapus setelah terkirim.
+- Kalau `window.open` diblokir (popup blocker), tampilkan panel fallback: teks pesan + tombol "Salin pesan"
+  (`navigator.clipboard`) + tautan `wa.me` biasa.
+
+### B.4 Di luar cakupan T0 (sengaja)
+
+Stok real-time, nomor pesanan tersimpan, pembayaran otomatis, notifikasi ke kamu. Semua itu butuh T1–T2 (§5).
+
+---
+
+## Lampiran C — Kontrak motion (siap ditulis di Fase 2)
+
+### C.1 CSS (`styles/motion.css`)
+
+```css
+@layer motion {
+  :root {
+    --dur-1: 120ms; --dur-2: 180ms; --dur-3: 280ms; --dur-4: 420ms;
+    --ease-out: cubic-bezier(.22,.61,.36,1);
+    --ease-spring: cubic-bezier(.34,1.4,.64,1);
+  }
+
+  /* konten TETAP terlihat kalau JS mati; kelas .js dipasang skrip inline di <head> */
+  .js .reveal:not([data-shown]) {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  .reveal {
+    transition: opacity var(--dur-3) var(--ease-out),
+                transform var(--dur-3) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 45ms);
+  }
+
+  @keyframes pop { 0% { transform: scale(.7) } 60% { transform: scale(1.15) } 100% { transform: scale(1) } }
+  @keyframes rise { from { opacity: 0; transform: translate3d(0, 18px, 0) } to { opacity: 1; transform: none } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal:not([data-shown]) { opacity: 1; transform: none; }
+  .reveal { transition: none; transition-delay: 0s; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+### C.2 `Reveal.tsx`
+
+```tsx
+<Reveal as="article" delay={index}>…</Reveal>
+```
+
+- **Satu** `IntersectionObserver` tingkat modul (dibuat malas), `Map<Element, () => void>`; `unobserve` setelah tampil.
+- Tidak memakai `useState` per item: saat masuk viewport, langsung `node.setAttribute('data-shown', 'true')`
+  → nol re-render React untuk 9–15 kartu.
+- `prefers-reduced-motion: reduce` → set `data-shown` segera, observer tidak pernah dibuat.
+- Tanpa JS → kelas `.js` tidak pernah dipasang → konten langsung terlihat (tidak ada halaman kosong).
+- `delay` dibatasi 0–5 (maks 225 ms) supaya item ke-20 tidak menunggu 1 detik.
+
+### C.3 Checklist drawer keranjang
+
+- Buka dari badge/header dan setelah "Tambah ke keranjang" (opsional; default: toast, bukan drawer, agar tidak memotong alur).
+- `role="dialog" aria-modal="true" aria-labelledby`, fokus pindah ke tombol tutup saat buka.
+- Escape, klik backdrop, tombol tutup → tutup; fokus kembali ke elemen pemicu.
+- `Tab`/`Shift+Tab` terkurung di dalam drawer; konten belakang `inert`.
+- Scroll body dikunci **tanpa** menggeser layout (`scrollbar-gutter: stable`).
+- Animasi 280 ms; kalau `prefers-reduced-motion`, muncul tanpa animasi.
+
+---
+
+## Lampiran D — Deployment
+
+### D.1 `.github/workflows/deploy.yml`
+
+```yaml
+name: Deploy ke GitHub Pages
+
+on:
+  push:
+    branches: [main, arena/f64c144f-rotirumah-web]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_BASE_PATH: /rotirumah-web
+      NEXT_PUBLIC_SITE_URL: https://sanzue.github.io/rotirumah-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Verifikasi artefak
+        run: |
+          touch out/.nojekyll
+          test -f out/index.html
+          test -f out/404.html
+          test -f out/sitemap.xml
+          test -f out/robots.txt
+          test -f out/manifest.webmanifest
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+```
+
+Versi action akan saya cek ulang saat eksekusi (kalau ada major baru, pakai yang resmi terbaru).
+
+### D.2 Perubahan setting repo (butuh izinmu, sekali saja)
+
+```bash
+# 1) Pages: legacy (Jekyll dari main) -> workflow
+gh api -X PUT repos/SanZUE/rotirumah-web/pages -f build_type=workflow
+
+# 2) izinkan branch kerja ikut deploy (preview sebelum merge)
+gh api -X POST repos/SanZUE/rotirumah-web/environments/github-pages/deployment-branch-policies \
+  -f name='arena/f64c144f-rotirumah-web' -f type=branch
+
+# 3) bukti
+gh api repos/SanZUE/rotirumah-web/pages
+```
+
+Kalau (1) atau (2) ditolak, jalur cadangan: merge PR ke `main` lebih dulu, deploy hanya dari `main`.
+
+### D.3 Verifikasi pasca-deploy
+
+| Cek | Cara |
+| --- | --- |
+| Bukan README lagi | buka `/rotirumah-web/`, harus ada hero + menu |
+| CSS/JS termuat | DevTools → Network, tidak ada 404 untuk `/_next/` |
+| Sub-halaman | `/rotirumah-web/menu/`, `/rotirumah-web/menu/bolen-keju/` |
+| 404 | buka URL ngawur → halaman 404 kustom, bukan 404 GitHub |
+| Tanpa pihak ketiga | filter Network by domain → hanya `sanzue.github.io` |
+| Meta | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` balik 200 |
+
+---
+
+## Lampiran E — Skrip QA yang akan dibuat
+
+```jsonc
+// package.json (tambahan)
+{
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "size:report": "node scripts/report-size.mjs",
+    "verify": "npm run typecheck && npm run build && npm run size:report"
+  }
+}
+```
+
+`scripts/report-size.mjs` membaca `out/`, merge semua `<script src>` + `<link rel=stylesheet>` per halaman,
+menghitung gzip, lalu mencetak tabel:
+
+```
+Halaman              JS gz     CSS gz    HTML gz
+/                    118.4 KB   4.1 KB     4.2 KB
+/menu/               118.4 KB   4.1 KB     4.3 KB
+/menu/bolen-keju/    119.0 KB   4.1 KB     4.0 KB
+```
+
+dan **gagal** (`exit 1`) kalau JS > 130 KB gzip atau CSS > 4,5 KB gzip — supaya regresi performa ketahuan
+di CI, bukan setelah deploy.
