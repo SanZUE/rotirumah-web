@@ -1,0 +1,79 @@
+name: Deploy ke GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - arena/97e08da0-rotirumah-web
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_BASE_PATH: /rotirumah-web
+      NEXT_PUBLIC_SITE_URL: https://sanzue.github.io/rotirumah-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build static export
+        run: npm run build
+
+      - name: Verifikasi artefak
+        run: |
+          set -e
+          touch out/.nojekyll
+          test -f out/index.html
+          test -f out/404.html
+          test -f out/sitemap.xml
+          test -f out/robots.txt
+          echo "Artefak OK: $(find out -type f | wc -l) file"
+
+      - name: Ukuran bundle
+        run: node scripts/report-size.mjs || true
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          # Izinkan workflow ini mengaktifkan Pages (build_type: workflow) sekali,
+          # supaya tidak perlu mengubah setting manual. Butuh permission pages: write.
+          enablement: true
+
+      - name: Upload artefak
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

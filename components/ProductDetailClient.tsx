@@ -2,60 +2,81 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import type { Product } from '@/lib/data';
-import { rupiah } from '@/lib/data';
-import { useCart } from './CartProvider';
+import { QuantityStepper } from '@/components/QuantityStepper';
+import { useCartActions } from '@/components/CartProvider';
+import { useCartUI } from '@/components/CartUI';
+import { useToast } from '@/components/Toast';
+import { rupiah } from '@/lib/format';
+import type { Product } from '@/lib/content/products';
 
 export function ProductDetailClient({ product }: { product: Product }) {
   const variants = product.variants ?? [];
-  const [selectedVariant, setSelectedVariant] = useState<string | null>(variants[0] ?? null);
+  const [variant, setVariant] = useState<string | null>(variants[0] ?? null);
   const [qty, setQty] = useState(1);
-  const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
+  const { addItem } = useCartActions();
+  const { showToast } = useToast();
+  const { openCart } = useCartUI();
 
   const total = useMemo(() => product.price * qty, [product.price, qty]);
 
-  function changeQty(delta: number) {
-    setQty((current) => Math.max(1, current + delta));
+  function handleAdd() {
+    addItem(
+      {
+        slug: product.slug,
+        name: product.name,
+        variant,
+        price: product.price,
+        image: product.image,
+        kind: 'product',
+      },
+      qty,
+    );
+    showToast(`${qty}× ${product.name} masuk keranjang`, { label: 'Lihat', href: '/keranjang' });
   }
 
-  function handleAdd() {
-    addItem({
-      slug: product.slug,
-      name: product.name,
-      variant: selectedVariant,
-      price: product.price,
-      image: product.image,
-    }, qty);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1800);
+  function handleAddAndOpen() {
+    addItem(
+      {
+        slug: product.slug,
+        name: product.name,
+        variant,
+        price: product.price,
+        image: product.image,
+        kind: 'product',
+      },
+      qty,
+    );
+    openCart();
   }
 
   return (
     <>
       <div className="eyebrow">{product.category}</div>
       <h1>{product.name}</h1>
-      <div className="price" style={{ fontSize: 24 }}>{rupiah(product.price)}</div>
-      <p className="detail-copy">{product.description} Dibuat fresh setiap hari dengan bahan yang dipilih untuk menjaga tekstur dan rasa.</p>
+      <div className="price-lg">{rupiah(product.price)}</div>
+      <p className="detail-copy">{product.description}</p>
+
       <div className="badges">
-        <span className="badge">✓ Fresh setiap hari</span><span className="badge">✓ Bisa untuk pre-order</span><span className="badge">✓ Cocok untuk hadiah</span>
+        <span className="badge">✓ Fresh setiap hari</span>
+        <span className="badge">✓ Bisa pre-order</span>
+        <span className="badge">✓ Cocok untuk hadiah</span>
       </div>
 
       {variants.length > 0 ? (
         <fieldset className="variant-fieldset">
           <legend>Varian rasa</legend>
           <div className="variant-row">
-            {variants.map((variant) => {
-              const active = variant === selectedVariant;
+            {variants.map((option) => {
+              const isActive = option === variant;
               return (
                 <button
-                  key={variant}
+                  key={option}
                   type="button"
-                  className={`variant ${active ? 'active' : ''}`}
-                  aria-pressed={active}
-                  onClick={() => setSelectedVariant(variant)}
+                  className="variant"
+                  aria-pressed={isActive}
+                  onClick={() => setVariant(option)}
                 >
-                  {variant}
+                  {option}
                 </button>
               );
             })}
@@ -64,22 +85,32 @@ export function ProductDetailClient({ product }: { product: Product }) {
       ) : null}
 
       <div className="selection-summary" aria-live="polite">
-        <span>Dipilih: <strong>{selectedVariant ?? 'Original'}</strong></span>
-        <span>Jumlah: <strong>{qty}</strong></span>
+        <span>
+          Dipilih: <strong>{variant ?? 'Original'}</strong>
+        </span>
+        <span>
+          Jumlah: <strong>{qty}</strong>
+        </span>
       </div>
 
-      <div className="qty" aria-label="Jumlah pesanan">
-        <button type="button" aria-label="Kurangi jumlah" onClick={() => changeQty(-1)} disabled={qty === 1}>−</button>
-        <span aria-live="polite">{qty}</span>
-        <button type="button" aria-label="Tambah jumlah" onClick={() => changeQty(1)}>+</button>
+      <QuantityStepper value={qty} onChange={setQty} label="Jumlah" />
+
+      <div className="detail-total">
+        <span>Total</span>
+        <strong>{rupiah(total)}</strong>
       </div>
 
-      <div className="detail-total"><span>Total</span><strong>{rupiah(total)}</strong></div>
-
-      <button className="btn btn-brown" style={{ width: '100%' }} type="button" onClick={handleAdd}>
-        {added ? '✓ Ditambahkan ke Keranjang' : 'Tambah ke Keranjang'}
-      </button>
-      <Link href="/keranjang" className="btn btn-ghost" style={{ width: '100%', marginTop: 8 }}>Lihat Keranjang</Link>
+      <div className="detail-actions">
+        <button type="button" className="btn btn-brown btn-block" onClick={handleAdd}>
+          Tambah ke Keranjang
+        </button>
+        <button type="button" className="btn btn-ghost btn-block" onClick={handleAddAndOpen}>
+          Tambah &amp; buka keranjang
+        </button>
+        <Link href="/menu" className="link-more" style={{ justifyContent: 'center' }}>
+          ← Kembali ke menu
+        </Link>
+      </div>
     </>
   );
 }

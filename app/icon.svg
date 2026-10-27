@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RotiRumah">
+  <rect width="64" height="64" rx="16" fill="#6f3c22"/>
+  <path d="M20 46V18h12.6c6.1 0 9.9 3.3 9.9 8.6 0 3.6-1.8 6.2-5 7.4L44 46h-6.1l-5.7-10.6h-6.4V46H20zm5.8-15.4h6.4c2.7 0 4.3-1.5 4.3-3.9s-1.6-3.9-4.3-3.9h-6.4v7.8z" fill="#fffaf4"/>
+  <circle cx="46" cy="20" r="3" fill="#c87746"/>
+</svg>

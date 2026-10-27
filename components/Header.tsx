@@ -1,17 +1,28 @@
 import Link from 'next/link';
-import { CartBadge } from './CartBadge';
-import { MobileNav } from './MobileNav';
+import { CartButton } from '@/components/CartButton';
+import { HeaderShell } from '@/components/HeaderShell';
+import { MobileNav } from '@/components/MobileNav';
+import { NavLinks } from '@/components/NavLinks';
 
 export function Header() {
   return (
-    <header className="header-shell">
+    <HeaderShell>
       <div className="container nav">
-        <Link href="/" className="brand"><span className="brand-mark">R</span><span>RotiRumah</span></Link>
-        <nav className="nav-links" aria-label="Navigasi utama">
-          <Link href="/">Beranda</Link><Link href="/menu">Menu</Link><Link href="/paket">Paket</Link><Link href="/tentang-kami">Tentang Kami</Link><Link href="/testimoni">Testimoni</Link><Link href="/kontak">Kontak</Link>
-        </nav>
-        <div className="nav-actions"><CartBadge /><Link href="/menu" className="nav-primary">Pesan Sekarang</Link><MobileNav /></div>
+        <Link href="/" className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            R
+          </span>
+          <span>RotiRumah</span>
+        </Link>
+        <NavLinks />
+        <div className="nav-actions">
+          <CartButton />
+          <Link href="/menu" className="btn btn-brown" prefetch={false} style={{ minHeight: 44, padding: '10px 16px' }}>
+            Pesan
+          </Link>
+          <MobileNav />
+        </div>
       </div>
-    </header>
+    </HeaderShell>
   );
 }

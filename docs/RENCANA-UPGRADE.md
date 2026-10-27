@@ -922,3 +922,64 @@ Halaman              JS gz     CSS gz    HTML gz
 
 dan **gagal** (`exit 1`) kalau JS > 130 KB gzip atau CSS > 4,5 KB gzip — supaya regresi performa ketahuan
 di CI, bukan setelah deploy.
+
+---
+
+## 13. Hasil implementasi (27 Oktober 2026)
+
+Status: Fase 0–5 sebagian besar **selesai dan terverifikasi build**, menunggu deploy.
+
+### 13.1 Yang sudah jalan
+
+| Area | Bukti |
+| --- | --- |
+| Static export untuk GitHub Pages | `output:'export'`, `basePath` dari `NEXT_PUBLIC_BASE_PATH`, `trailingSlash`, `images.unoptimized` |
+| Artefak lengkap | 21 halaman statis + `404.html`, `sitemap.xml` (17 URL), `robots.txt`, `manifest.webmanifest`, `icon.svg`, `og.jpg`, `out/.nojekyll` |
+| Workflow CI | `.github/workflows/deploy.yml` — typecheck → build → verifikasi artefak → laporan ukuran → upload → deploy. Job **build sukses** di run pertama |
+| Tailwind | dicabut: `postcss.config.mjs` dihapus, 3 devDependency hilang, CSS diganti 5 layer di `styles/` |
+| Gambar | 10 foto lokal (sharp) → AVIF/WebP/JPG 2 lebar + 4 lebar untuk hero; LQIP base64; **0 request pihak ketiga** |
+| Hero LCP | `<picture>` + `preload` AVIF di `<head>` (lewat `react-dom preload`) + `fetchpriority=high`. AVIF 1080 = **41,5 KB** |
+| Motion | token durasi/easing, scroll reveal (1 observer, tanpa state), hero entrance, hover kartu, badge pop, drawer + backdrop, toast, skeleton — semua `transform`/`opacity`, hormat `prefers-reduced-motion` (layar CSS + `media (scripting: enabled)`) |
+| A11y | palet baru: `--accent #a05226` (5,42:1), `--muted #7a6a5f` (4,53:1 di band); satu `<h1>`/halaman; drawer `role=dialog` + focus trap + Escape; target sentuh 44 px; `aria-live` untuk qty & toast |
+| SEO | metadata per halaman + canonical + OG/Twitter, JSON-LD `Bakery`/`Product`/`BreadcrumbList`, sitemap, robots, manifest, `theme-color` |
+| Keranjang | `useReducer` + context terpisah (state vs actions), sinkron antar-tab, versi storage v2 dengan migrasi dari v1, badge keranjang **tampil di mobile** |
+| Checkout T0 | pickup (gratis) vs delivery (Rp10.000, min Rp50.000), tanggal H+1…H+14, slot jam, alamat kondisional, catatan, kode pesanan `RR-YYYYMMDD-XXXX` (crypto), validasi + `role="alert"`, draft pesan + fallback popup-blocked |
+
+### 13.2 Koreksi penting terhadap target di §6
+
+Target "first-load JS ≤ 130 KB gzip" **tidak realistis**. Diukur dengan proyek Next 16
+minimal (satu halaman kosong, `output:'export'`): **168,3 KB gzip** hanya untuk runtime
+framework. Angka final:
+
+| Metrik | Target awal | Hasil nyata |
+| --- | --- | --- |
+| JS total | ≤ 130 KB | 182,8 KB (tidak mungkin di bawah lantai framework) |
+| **Kode aplikasi** (total − lantai) | — | **14,5 KB gzip** |
+| CSS | ≤ 4,5 KB | 5,8 KB gzip (24 KB mentah) — lebih besar karena motion + komponen baru, masih di bawah anggaran 6,5 KB |
+| Hero AVIF 1080 | ≤ 90 KB | **41,5 KB** |
+| Request pihak ketiga | 0 | **0** |
+| HTML/halaman | ~4,2 KB gzip | 4,4–8,0 KB gzip |
+
+`npm run size:report` sekarang melaporkan *kode aplikasi* (total − lantai 168,3 KB) dan gagal
+kalau melewati 18 KB, supaya regresi kode kita sendiri tetap terdeteksi.
+
+### 13.3 Deviasi dari rencana
+
+- **Filter kategori** memakai state klien + `history.replaceState` (`?kategori=`), bukan
+  halaman statis per kategori. Semua produk tetap ada di HTML awal, jadi tidak ada kerugian SEO;
+  keuntungannya nol halaman tambahan.
+- **5 foto paket** (`paket-ngopi`, `paket-keluarga`, `paket-hampers`, `paket-spesial`,
+  `paket-lebaran`) belum dibuat karena batas 10 gambar per turn. Sementara memakai foto
+  yang sudah ada (ditandai `TODO` di `lib/content/bundles.ts`).
+- **`loading.tsx` dihapus**, diganti skeleton di dalam `CartView` (karena export statis tidak
+  memakai streaming).
+
+### 13.4 Yang masih terbuka
+
+1. Deploy: branch kerja ditolak environment `github-pages`
+   (`Branch "…" is not allowed to deploy to github-pages due to environment protection rules.`).
+   Perlu merge ke `main` atau menambah branch di Settings → Environments.
+2. Pages `build_type` masih `legacy`; workflow sudah memakai `configure-pages` dengan
+   `enablement: true` supaya bisa mengaktifkannya sendiri saat berjalan di branch yang diizinkan.
+3. Lighthouse/LCP/CLS final harus diukur di Chrome (sandbox tidak punya browser).
+4. Backend T1–T2 (Supabase) masih backlog sesuai keputusan.

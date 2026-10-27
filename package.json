@@ -1,11 +1,16 @@
 {
   "name": "rotirumah-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "images:optimize": "node scripts/optimize-images.mjs",
+    "size:report": "node scripts/report-size.mjs",
+    "verify": "npm run typecheck && npm run build && node scripts/report-size.mjs",
+    "preview": "node scripts/preview-static.mjs"
   },
   "dependencies": {
     "next": "16.3.5",
@@ -16,10 +21,8 @@
     "@types/node": "26.5.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "typescript": "7.0.2",
-    "tailwindcss": "4.3.3",
-    "@tailwindcss/postcss": "4.3.3",
-    "postcss": "8.5.28"
+    "sharp": "0.35.5",
+    "typescript": "7.0.2"
   },
   "engines": {
     "node": ">=20.9.0"
